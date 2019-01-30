@@ -4,11 +4,11 @@ class HiddenLayer:
 
     # Size of all instance variables are dependant on the previous layer.
     def __init__(self, num_inputs, num_nodes):
-        self.inputs = None #np.zeros(num_inputs)
+        self.inputs = None 
         self.bias = np.ones(num_nodes)
         self.weights = np.random.random((num_nodes, num_inputs))
         self.layer_error = np.zeros(num_nodes)
-        self.outputs = None #np.zeros(num_inputs)
+        self.outputs = None 
 
     # Does the summation and puts it through the activation function.
     def calculate_output(self):
@@ -17,13 +17,9 @@ class HiddenLayer:
         self.outputs = self.weights.dot(self.inputs)
         self.outputs += self.bias
 
-        print("PRE Activation: " + str(self.outputs))
-
-        # Putting them through Activation Function (sigmoid).
+        # Activation Function (sigmoid).
         for i in range(0, len(self.outputs)):
         	self.outputs[i] = self.sigmoid(self.outputs[i])
-
-        print("POST Activation: " + str(self.outputs))
 
     # Calculating Sigmoid function.
     def sigmoid(self, x, derivative = False):
@@ -34,33 +30,46 @@ class HiddenLayer:
         return sigm
 
 
-    # Output Error = sigmoidError(Ci) * (Di - Ci)
-    # Pattern Error = Sum of (Di - Ci) ** 2
+    # Ei ← sigmoidError(Ci ) × [Di − Ci ]
+    # Pattern_Errori += (Di − Ci ) ** 2
     def calculate_output_error(self, desired):
         self.layer_error = self.sigmoid(self.outputs, derivative = True) * (desired - self.outputs)
-        print(str(self.layer_error) + " = " + str(self.sigmoid(self.outputs, derivative = True)) + " * (" + str(desired) + " - " + str(self.outputs) + ")")
-        print("LAYER ERROR: " + str(self.layer_error))
-        print("DESIRED: " + str(desired))
-        print("COST: " + str(self.outputs))
 
         pattern_error = 0
         for node in range(0, len(self.outputs)):
             pattern_error += (desired[node] - self.outputs[node]) ** 2
-            print(str(pattern_error) + " += (" + str(desired[node]) + " - " + str(self.outputs[node]) + ")^2")
+            #print(str(pattern_error) + " += (" + str(desired[node]) + " - " + str(self.outputs[node]) + ")^2")
 
         return pattern_error
 
     # Calculates the error of each hidden layer.
-    # ERRORi = sigmoidError(Bi) * Sum of WijEj
+    # Ei = sigmoidError(Bi) * 􏰈 Sum WijEj
     def calculate_layer_error(self, post_layer_error):
     
+        #print(str(self.to_string()))
+        #print("POST LAYER ERROR: " + str(post_layer_error))
+        if len(post_layer_error) == 1:
+            self.layer_error = self.sigmoid(self.inputs, derivative = True) * (self.weights * post_layer_error).sum()
+            #print("Solving HiddenLayer Error (1 Node): " + str(self.layer_error) + " = " + str(self.sigmoid(self.inputs, derivative = True)) + " * " + str((self.weights * post_layer_error).sum()))
+        else:
+            self.layer_error = self.sigmoid(self.inputs, derivative = True) * self.weights.dot(post_layer_error).sum()
+            #print("Solving HiddenLayer Error (2+ Nodes): " + str(self.layer_error) + " = " + str(self.sigmoid(self.inputs, derivative = True)) + " * " + str(self.weights.dot(post_layer_error).sum()))
 
-        ## Error with dot product num cols in first matrix != # rows in second matrix ##
-        ## Fix this issue.
+    # Adjusting the weights based of layer error.
+    def adjust_weights_and_bias(self, learning_rate, momentum):
 
-        self.layer_error = self.sigmoid(self.outputs, derivative = True) * self.weights.dot(post_layer_error).sum()
-        print("Solving HiddenLayer Error: " + str(self.layer_error) + " = " + str(self.sigmoid(self.outputs, derivative = True)) + " * " + str(self.weights.dot(post_layer_error).sum()))
-        print(">>>>>> " + str(self.layer_error))
+        # Weight += αBiEj + αBiEjρ
+        # T is used to transpose the matrix so right columns and rows are added and then transposed back into regular positions.
+        if momentum > 0:
+            self.weights = (self.weights.T + ((self.layer_error * self.outputs * learning_rate) + (self.layer_error * self.outputs * learning_rate * momentum))).T
+        else:
+            self.weights = (self.weights.T + ((self.layer_error * self.outputs * learning_rate)).T)
+
+        # Bias += αEi
+        print("1111: " + str(self.bias))
+        #print("BIAS DDD " + str((self.layer_error * learning_rate) + self.bias))
+        self.bias += self.layer_error * learning_rate
+        print("FDSFD" + str(self.bias))
 
     # Adding input to the layer before computation.
     def initialize_input(self, inputs):
@@ -81,12 +90,5 @@ class HiddenLayer:
         print("weights: " + str(self.weights))
         print("error: " + str(self.layer_error))
 
-
-
-
-#i = HiddenLayer(3, 4)
-#sigm = i.sigmoid(np.array([1,2,3,4,5,6]))
-#sigm = i.sigmoid(24)
-#print(str(sigm))
 
 

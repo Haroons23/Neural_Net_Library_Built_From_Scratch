@@ -6,6 +6,7 @@ class NeuralNetwork:
 
     # Training stops when total error is less than max.
     max_error = 0.05
+    ONLINE_LEARNING = True
 
     def __init__(self, num_inputs, num_hidden_layers, num_outputs):
         self.num_inputs  = num_inputs
@@ -56,18 +57,19 @@ class NeuralNetwork:
         while epoch < 1 and cumulative_error > self.max_error:
             
             for i in range(0, len(data)):
+                #print(str("Data to Input Layer: " + str(data[i])))
                 self.forward_prop(data[i])
                 cumulative_error += self.backward_prop(learning_rate, momentum, desired[i])
+                    
 
 
             epoch += 1
 
 
-    # Forward Propagation.
+    # Forward Propagation. The input and output layers are stored in the hidden layer.
     def forward_prop(self, data):
 
         for hidden_layer in self.hidden_layers:
-            print("------HIDDEN LAYER------")
 
             # Initializing input data for layer to be evaluated.
             hidden_layer.initialize_input(data)
@@ -75,7 +77,7 @@ class NeuralNetwork:
 
             # Collecting evaluated output because it is the input to the next layer.
             data = hidden_layer.get_output()
-            hidden_layer.to_string()
+            #hidden_layer.to_string()
 
     # Backward Propagation.
     def backward_prop(self, learning_rate, momentum, desired):
@@ -84,16 +86,17 @@ class NeuralNetwork:
         pattern_error = self.output_layer.calculate_output_error(desired)
         post_layer_error = self.output_layer.get_error()
 
-        # Calculating hidden layer errors starting with the last one.
+        # Calculating hidden layer errors.
         for layer in range(len(self.hidden_layers) - 1, -1, -1):
             self.hidden_layers[layer].calculate_layer_error(post_layer_error)
-            print("Bitch!")
-            #post_layer_error = self.hidden_layers[layer].get_error()
+            post_layer_error = self.hidden_layers[layer].get_error()
+
+        # Adjusting the weights for each layer. 
+        for layer in self.hidden_layers:
+            layer.adjust_weights_and_bias(learning_rate, momentum)
         
         return pattern_error
 
-
-        
 
     def to_string(self):
         for i in self.hidden_layers:
@@ -102,7 +105,7 @@ class NeuralNetwork:
         self.output_layer.to_string()
 
 
-n = NeuralNetwork(2, [1], 1)
+n = NeuralNetwork(2, [2, 2], 1)
 #n.forward_prop()
 n.train(1, .05, .10)
 
