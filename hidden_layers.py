@@ -33,13 +33,17 @@ class HiddenLayer:
     # Ei ← sigmoidError(Ci ) × [Di − Ci ]
     # Pattern_Errori += (Di − Ci ) ** 2
     def calculate_output_error(self, desired):
+
         self.layer_error = self.sigmoid(self.outputs, derivative = True) * (desired - self.outputs)
         print("OUTPUT ERROR: " + str(self.layer_error) + " = " + str(self.sigmoid(self.outputs, derivative = True)) + " * (" + str(desired) + " - " + str(self.outputs) )
 
         pattern_error = 0
         for node in range(0, len(self.outputs)):
             pattern_error += (desired[node] - self.outputs[node]) ** 2
-            print("PATTERN ERROR: " + str(pattern_error) + " += (" + str(desired[node]) + " - " + str(self.outputs[node]) + ")^2")
+            #print("PATTERN ERROR: " + str(pattern_error) + " += (" + str(desired[node]) + " - " + str(self.outputs[node]) + ")^2")
+        
+        print("inputs: " + str(self.inputs) + " output: " + str(self.outputs) + " Desired: " + str(desired) +  " Pattern Error " + str(pattern_error))
+   
 
         return pattern_error
 
@@ -47,12 +51,10 @@ class HiddenLayer:
     # Ei = sigmoidError(Bi) * 􏰈 Sum WijEj
     # The object structure (the hidden layer contains the previous layers weights, bias).
     # For this reason HiddenLayer n+1 is used to calculate the layer error for HiddenLayer n.
-    def calculate_layer_error(self):#, post_layer_error):
+    def calculate_layer_error(self):
     
         error = None
-        #print(str(self.to_string()))
-        #print("POST LAYER ERROR: " + str(post_layer_error))
-        #if len(post_layer_error) == 1:
+
         if len(self.layer_error) == 1:
             error = self.sigmoid(self.inputs, derivative = True) * (self.weights * self.layer_error).sum()
             print("Solving HiddenLayer Error (1 Node): " + str(error) + " = " + str(self.sigmoid(self.inputs, derivative = True)) + " * " + str((self.weights * self.layer_error).sum()))
@@ -69,20 +71,30 @@ class HiddenLayer:
         #self.to_string()
         # Weight += αBiEj + αBiEjρ
         # T is used to transpose the matrix so right columns and rows are added and then transposed back into regular positions.
-        if momentum > 0:
-            self.weights = (self.weights.T + ((self.layer_error * self.outputs * learning_rate) + (self.layer_error * self.outputs * learning_rate * momentum))).T
-            print("change in weights = " + str((self.layer_error * self.outputs * learning_rate)) + " + " + str((self.layer_error * self.outputs * learning_rate * momentum)))
-        else:
-            self.weights = (self.weights.T + ((self.layer_error * self.outputs * learning_rate)).T)
-            print("change in weights = " + str((self.layer_error * self.outputs * learning_rate)))
+         
+        #print("Inputs: " + str(self.inputs) + " ERROR: " + str(self.layer_error))
 
-        print("POST ADJUSTMENT:")
-        self.to_string()
+        if momentum > 0:
+            self.weights = (self.weights.T + ((self.layer_error * self.inputs * learning_rate) + (self.layer_error * self.inputs * learning_rate * momentum))).T
+            print("change in weights = " + str((self.layer_error * self.inputs * learning_rate)) + " + " + str((self.layer_error * self.inputs * learning_rate * momentum)))
+        else:
+            #self.weights = (self.weights.T + ((self.layer_error * self.inputs * learning_rate))).T
+            self.weights = (self.weights + ((self.layer_error * self.inputs * learning_rate)))
+            print("change in weights = " + str((self.layer_error * self.inputs * learning_rate)))
+
+        print("WEIGHTS: " + str(self.weights))
+
+        #print("ADJUSTING ERROR: Weights" + str(self.weights))
+        #self.to_string()
+
+        #print("POST ADJUSTMENT:")
+        #self.to_string()
 
         # Bias += αEi
-        #print("ERROR: " + str(self.layer_error) + " OUTPUTS: " + str(self.outputs))
+        #print("ERROR: " + str(self.layer_error) + " OUTPUTS: " + str(self.inputs))
         self.bias += self.layer_error * learning_rate
         print("NEW BIAS: " + str(self.bias) + " += " + str(self.layer_error * learning_rate))
+        #print(" adjusted weights OUTPUTS: " + str(self.outputs))
 
     # Adding input to the layer before computation.
     def initialize_input(self, inputs):
