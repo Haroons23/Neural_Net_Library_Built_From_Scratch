@@ -18,7 +18,10 @@ class NeuralNetwork:
         self.create_output_layer(num_inputs, num_hidden_layers[-1], num_outputs)
 
 
-    # Creates hidden layers. Each array index is one layer. Index value is number of nodes in that hidden layer.
+    # Description: Creates a list of hiddenlayer objects which represent the hidden layers of the network.
+    # num_inputs: number of inputs going into first hidden layer.
+    # hidden_layers_info: an int array with each index representing one hidden layer. The value in index
+    # represents number of nodes in the hidden layer. 
     def create_hidden_layers(self, num_inputs, hidden_layers_info):
 
         # Means Perceptron therefore no hidden layer as input goes straight to output node.
@@ -38,7 +41,9 @@ class NeuralNetwork:
             temp_layer = HiddenLayer(hidden_layers_info[layer_num - 1], hidden_layers_info[layer_num])
             self.hidden_layers.append(temp_layer)
 
-    # The number of input going into the output layer is equal to the number of nodes in the last hidden layer.
+    # Description: Adds an output layer to the list containing the hidden layers.
+    # num_inputs: if NN is a perceptron num inputs is used because inputs go straight to the output layer.
+    # last_hidden_layer: number of nodes in last hidden layer is the number of inputs to the output layer.
     def create_output_layer(self, num_inputs, last_hidden_layer, num_outputs):
 
         # Checking for invalid dimensions.
@@ -54,9 +59,12 @@ class NeuralNetwork:
 
         self.hidden_layers.append(self.output_layer)
 
+    # Description: Runs the training simulation to modify the weights to their correct values.
+    # data & desired: data to train with and the desired output of of each training case.
+    # learning_rate & momentum: the amount to which weights can change by. 
     def train(self, data, desired, learning_rate, momentum):
 
-        cumulative_error = 0.10
+        cumulative_error = 0.05
         epoch = 0
 
         # Used to randomize traversal order in each epoch.
@@ -65,22 +73,28 @@ class NeuralNetwork:
             indexes.append(i)
 
         # Train until you run out of data or error is below limit.
-        while epoch < 1 and cumulative_error > self.max_error:
+        while epoch < 100000 and cumulative_error > self.max_error:
             
             cumulative_error = 0
             random.shuffle(indexes)
 
             for i in indexes:
-                #print(str("Data to Input Layer: " + str(data[i])))
+                #print("$$$$$$$$$" + str(epoch) + str(". Data to Input Layer: " + str(data[i])))
                 self.forward_prop(data[i])
                 cumulative_error += self.backward_prop(learning_rate, momentum, desired[i])
 
             # Scale error by number of samples.
             cumulative_error /= len(data)
-            print(str(epoch) + ". Error for Epoch: " + str(cumulative_error))
+            if epoch % 100 == 0:
+                print(str(epoch) + ". ->Error for Epoch: " + str(cumulative_error))
+                print(str("11" ) + str(self.forward_prop(np.array([1,1]))))
+                print(str("10" ) + str(self.forward_prop(np.array([1,0]))))
+                print(str("01" ) + str(self.forward_prop(np.array([0,1]))))
+                print(str("00" ) + str(self.forward_prop(np.array([0,0]))))
             epoch += 1
 
-    # Forward Propagation: Uses the output values of Layeri to calculate Layeri+1.
+    # Description: Propagates output from first layer to the last to calculate output.
+    # data: data passed into the first layer of network as input.
     def forward_prop(self, data):
 
         for hidden_layer in self.hidden_layers:
@@ -91,25 +105,24 @@ class NeuralNetwork:
 
             # Collecting evaluated output because it is the input to the next layer.
             data = hidden_layer.get_output()
-            #hidden_layer.to_string()
+            #self.to_string()
 
+        # Returning the last layers output also know as the NN's output.
         return (self.hidden_layers[-1].get_output())
 
-    # Backward Propagation.
+    # Description: Propagates layer error values backwards through each layer to calculate changes in weights.
+    # leanning_rate & momentum: the amount to which weights can change by. 
+    # desired: the desired result of each training case, used to calculate output error.
     def backward_prop(self, learning_rate, momentum, desired):
     
         # Calculating output error.
-        #pattern_error = self.output_layer.calculate_output_error(desired)
         pattern_error = self.hidden_layers[-1].calculate_output_error(desired)
-        #post_layer_error = self.hidden_layers[-1].get_error()
 
-        # Calculating hidden layer errors. Starting at len() - 2 because len() - 1 is output layer. 
+        # Calculating hidden layer errors. Starting at len() because len() - 1 is output layer. 
         for layer in range(len(self.hidden_layers) - 1, 0, - 1):
-            error = self.hidden_layers[layer].calculate_layer_error()#(post_layer_error)
+            error = self.hidden_layers[layer].calculate_layer_error()
             self.hidden_layers[layer - 1].set_error(error)
-            #post_layer_error = self.hidden_layers[layer].get_error()
 
-        #print("\n\nTIME TO ADJUST ALL THE WEIGHTS!!!!\n\n")
         # Adjusting the weights for each layer. 
         for layer in self.hidden_layers:
             layer.adjust_weights_and_bias(learning_rate, momentum)
@@ -124,52 +137,8 @@ class NeuralNetwork:
         print("===========================")
 
 
-#np.random.seed(0)
-n = NeuralNetwork(2, [2], 1)
-n.to_string()
 
-'''
-and_training_data = np.random.random((1000, 2))
-and_results = np.zeros((1000, 1))
 
-for row in range(0, len(and_training_data)):
-    for i in range(0, len(and_training_data[row])):
-        if and_training_data[row][i] >= 0.50:
-            and_training_data[row][i] = 1
-        else:
-            and_training_data[row][i] = 0
-
-ii=0
-jj=0
-kk=0
-ll=0
-
-for row in range(0, len(and_training_data)):
-    if and_training_data[row][0] == 1 and and_training_data[row][1] == 1:
-        and_results[row] = [0]
-        ii+=1
-    elif and_training_data[row][0] == 0 and and_training_data[row][1] == 1:
-        and_results[row] = [0]
-        jj+=1
-    elif and_training_data[row][0] == 1 and and_training_data[row][1] == 0:
-        and_results[row] = [0]
-        kk+=1
-    else:
-        and_results[row] = [1]
-        ll+=1
-'''
-data = np.array([[1, 1],[1, 0],[0, 1],[0, 0]])
-results = np.array([[0],[1],[1],[0]])
-
-n.train(data, results, .05, 0)
-
-#print("finished training: " + " i: " + str(ii) + " j: " + str(jj) + " k: " + str(kk) + " l: " + str(ll) )
-#exit()
-
-print(str("1-1: " ) + str(n.forward_prop(np.array([1,1]))))
-print(str("1-0: " ) + str(n.forward_prop(np.array([1,0]))))
-print(str("0-1: " ) + str(n.forward_prop(np.array([0,1]))))
-print(str("0-0: " ) + str(n.forward_prop(np.array([0,0]))))
 
 
 
