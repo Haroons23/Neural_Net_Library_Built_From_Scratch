@@ -73,7 +73,7 @@ class NeuralNetwork:
             indexes.append(i)
 
         # Train until you run out of data or error is below limit.
-        while epoch < 100000 and cumulative_error > self.max_error:
+        while epoch < 5001 and cumulative_error > self.max_error:
             
             cumulative_error = 0
             random.shuffle(indexes)
@@ -85,12 +85,16 @@ class NeuralNetwork:
 
             # Scale error by number of samples.
             cumulative_error /= len(data)
-            if epoch % 100 == 0:
+            if epoch % 5000 == 0:
                 print(str(epoch) + ". ->Error for Epoch: " + str(cumulative_error))
-                print(str("11" ) + str(self.forward_prop(np.array([1,1]))))
-                print(str("10" ) + str(self.forward_prop(np.array([1,0]))))
-                print(str("01" ) + str(self.forward_prop(np.array([0,1]))))
-                print(str("00" ) + str(self.forward_prop(np.array([0,0]))))
+                #print(str("1: 0.3 " ) + str(self.forward_prop(np.array([-0.55555556, 0.25,        -0.86440678,  -0.91666667  ]))))
+                #print(str("2: 0.6 " ) + str(self.forward_prop(np.array([-0.66666667, -0.66666667, -0.22033898,  -0.25        ]))))
+                #print(str("3: 0.9 " ) + str(self.forward_prop(np.array([-0.22222222, -0.33333333,  0.05084746,   0.          ]))))
+
+                #print(str("11" ) + str(self.forward_prop(np.array([1,1]))))
+                #print(str("10" ) + str(self.forward_prop(np.array([1,0]))))
+                #print(str("01" ) + str(self.forward_prop(np.array([0,1]))))
+                #print(str("00" ) + str(self.forward_prop(np.array([0,0]))))
             epoch += 1
 
     # Description: Propagates output from first layer to the last to calculate output.
