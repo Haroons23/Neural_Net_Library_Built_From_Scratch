@@ -7,7 +7,7 @@ import sys
 class NeuralNetwork:
 
     # Training stops when total error is less than max.
-    max_error = 0.00005
+    max_error = 0.000001
     ONLINE_LEARNING = True
 
     def __init__(self, num_inputs, num_hidden_layers, num_outputs):
@@ -62,10 +62,11 @@ class NeuralNetwork:
     # Description: Runs the training simulation to modify the weights to their correct values.
     # data & desired: data to train with and the desired output of of each training case.
     # learning_rate & momentum: the amount to which weights can change by. 
-    def train(self, data, desired, learning_rate, momentum):
-
-        cumulative_error = 0.05
+    def train(self, data, desired, learning_rate, momentum, validation_data):
+        
+        cumulative_error = 1000
         epoch = 0
+        previous_epoch_error = 1000
 
         # Used to randomize traversal order in each epoch.
         indexes = []
@@ -73,29 +74,58 @@ class NeuralNetwork:
             indexes.append(i)
 
         # Train until you run out of data or error is below limit.
-        while epoch < 5001 and cumulative_error > self.max_error:
+        while epoch < 1 and cumulative_error > self.max_error:
             
             cumulative_error = 0
             random.shuffle(indexes)
 
             for i in indexes:
-                #print("$$$$$$$$$" + str(epoch) + str(". Data to Input Layer: " + str(data[i])))
                 self.forward_prop(data[i])
                 cumulative_error += self.backward_prop(learning_rate, momentum, desired[i])
 
             # Scale error by number of samples.
             cumulative_error /= len(data)
-            if epoch % 5000 == 0:
-                print(str(epoch) + ". ->Error for Epoch: " + str(cumulative_error))
-                #print(str("1: 0.3 " ) + str(self.forward_prop(np.array([-0.55555556, 0.25,        -0.86440678,  -0.91666667  ]))))
-                #print(str("2: 0.6 " ) + str(self.forward_prop(np.array([-0.66666667, -0.66666667, -0.22033898,  -0.25        ]))))
-                #print(str("3: 0.9 " ) + str(self.forward_prop(np.array([-0.22222222, -0.33333333,  0.05084746,   0.          ]))))
+            if epoch % 1 == 0:
+
+                #validation_error = self.validation(validation_data[0], validation_data[1])
+
+                # If Epoch error increases by more than 0.01 between two epochs, then stop training.
+                if cumulative_error - previous_epoch_error > 0.01:
+                    return
+                
+                previous_epoch_error = cumulative_error
+
+                #print(str(epoch) + ". ->Error Epoch: " + str(cumulative_error))# + " Validation: " + str(validation_error))
+                #print(str("1: 0.0 " ) + str(self.forward_prop(np.array([-0.55555556, 0.25,        -0.86440678,  -0.91666667  ]))))
+                #print(str("2: 0.5 " ) + str(self.forward_prop(np.array([-0.66666667, -0.66666667, -0.22033898,  -0.25        ]))))
+                #print(str("3: 1.0 " ) + str(self.forward_prop(np.array([-0.22222222, -0.33333333,  0.05084746,   0.          ]))))
 
                 #print(str("11" ) + str(self.forward_prop(np.array([1,1]))))
                 #print(str("10" ) + str(self.forward_prop(np.array([1,0]))))
                 #print(str("01" ) + str(self.forward_prop(np.array([0,1]))))
                 #print(str("00" ) + str(self.forward_prop(np.array([0,0]))))
+
             epoch += 1
+
+    # Used to see if model is overfitting and to see if hyperparameters need to be adjusted.
+    # If Training error is low but validation error is higher, then model has overfitted data.
+    # If Validation error is low then model has not overfitted.
+    def validation(self, data, desired):
+        
+        # Total Output error for the Epoch.
+        cumulative_error = 0
+
+        # Getting model output for input.
+        for index in range(0, len(data)):
+            self.forward_prop(data[index])
+            cumulative_error += self.hidden_layers[-1].calculate_output_error(desired[index])
+            #print("Desired: " + str(desired[index]) + " Output: " + str(self.hidden_layers[-1].get_output()) + " cumu: " + str(cumulative_error) + " += " + str(self.hidden_layers[-1].calculate_output_error(desired[index])))
+
+        # Scaling error by number of samples.
+        cumulative_error /= len(data)
+        #print("validation error: " + str(cumulative_error))
+
+        return cumulative_error
 
     # Description: Propagates output from first layer to the last to calculate output.
     # data: data passed into the first layer of network as input.
@@ -109,7 +139,6 @@ class NeuralNetwork:
 
             # Collecting evaluated output because it is the input to the next layer.
             data = hidden_layer.get_output()
-            #self.to_string()
 
         # Returning the last layers output also know as the NN's output.
         return (self.hidden_layers[-1].get_output())
