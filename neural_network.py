@@ -67,6 +67,11 @@ class NeuralNetwork:
         cumulative_error = 1000
         epoch = 0
         previous_epoch_error = 1000
+        previous_epoch = 0
+
+        # Used to prevent overfitting.
+        previous_validation_error = 0
+        nn_prior_to_overfitting = self.hidden_layers
 
         # Used to randomize traversal order in each epoch.
         indexes = []
@@ -74,7 +79,7 @@ class NeuralNetwork:
             indexes.append(i)
 
         # Train until you run out of data or error is below limit.
-        while epoch < 1 and cumulative_error > self.max_error:
+        while epoch < 3001 and cumulative_error > self.max_error:
             
             cumulative_error = 0
             random.shuffle(indexes)
@@ -85,25 +90,26 @@ class NeuralNetwork:
 
             # Scale error by number of samples.
             cumulative_error /= len(data)
-            if epoch % 1 == 0:
 
-                #validation_error = self.validation(validation_data[0], validation_data[1])
+            # Early exit if slope is negative for every 5 epochs.
+            if epoch % 5 == 0:
+                try:
+                    if float(cumulative_error - previous_epoch_error) / (epoch - previous_epoch) > 0.01:
+                        #print(str(cumulative_error) + " - " + str(previous_epoch_error) +" / "+ str(epoch) +" - "+ str(previous_epoch))
+                        return
+                except ZeroDivisionError:
+                    pass
 
-                # If Epoch error increases by more than 0.01 between two epochs, then stop training.
-                if cumulative_error - previous_epoch_error > 0.01:
-                    return
-                
                 previous_epoch_error = cumulative_error
+                previous_epoch = epoch
 
-                #print(str(epoch) + ". ->Error Epoch: " + str(cumulative_error))# + " Validation: " + str(validation_error))
-                #print(str("1: 0.0 " ) + str(self.forward_prop(np.array([-0.55555556, 0.25,        -0.86440678,  -0.91666667  ]))))
-                #print(str("2: 0.5 " ) + str(self.forward_prop(np.array([-0.66666667, -0.66666667, -0.22033898,  -0.25        ]))))
-                #print(str("3: 1.0 " ) + str(self.forward_prop(np.array([-0.22222222, -0.33333333,  0.05084746,   0.          ]))))
-
-                #print(str("11" ) + str(self.forward_prop(np.array([1,1]))))
-                #print(str("10" ) + str(self.forward_prop(np.array([1,0]))))
-                #print(str("01" ) + str(self.forward_prop(np.array([0,1]))))
-                #print(str("00" ) + str(self.forward_prop(np.array([0,0]))))
+            # If the validation error increases this means that the model has overfitted the data.
+            # To resolve this we go back to the state prior to overfitting.
+            if epoch % 100 == 0:
+                #validation_error = self.validation(validation_data[0], validation_data[1])
+                #if validation_error > previous_validation_error:
+                #    self.hidden_layers = nn_prior_to_overfitting
+                print(str(epoch) + ". ->Error Epoch: " + str(cumulative_error))# + " Validation: " + str(validation_error))
 
             epoch += 1
 
