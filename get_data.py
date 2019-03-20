@@ -14,11 +14,15 @@ def run_neural_network_tune_and_train():
      
     data_input = data[0]
     data_labels = data[1]
+    muscle_id = data[2]
 
-    hidden_layer_structure = [[8],[10],[8,4], [9],[2], [5,5],[10,5],[9],[20],[25],[15,10], [20,20], [20,15],[15],[5],[6],[2]]#,[4],[7],[8],[11], [12]]
-    learning_rate = 0.03
+    hidden_layer_structure = [[8],[9],[10],[8],[9],[10],[8],[9],[10],[10]]#,[8,4], [9],[2], [5,5],[10,5],[9],[20],[25],[15,10], [20,20], [20,15],[15],[5],[6],[2]]#,[4],[7],[8],[11], [12]]
+    learning_rate = 0.01
     config = 0
     average_model_error = 0
+
+    # Errors for all neurons in each muscle.
+    errors_all_muscles = {}
 
     # Cross Validation: Concatenating the folds to make one training set.
     for test_fold in range(len(data_input) - 1, - 1, - 1):
@@ -57,8 +61,7 @@ def run_neural_network_tune_and_train():
         # Validating model on validation set and then adjusting the hyperparameters.
         validation_error = n.validation(data_input[validation_fold], data_labels[validation_fold])
         print("--------- Validation Error: " + str(validation_error))
-        #hidden_layer_structure[0] += 
-        #hidden_layer_structure[1] += 1
+
         #learning_rate += .01
         config +=1
 
@@ -66,6 +69,7 @@ def run_neural_network_tune_and_train():
         wrong = 0
 
         '''
+        # Classification with 3 different values.
         for test_case in range(0, len(data_input[test_fold])):
             temp_output = n.forward_prop(data_input[test_fold][test_case])
             #print("Output: " + str(temp_output))
@@ -87,10 +91,22 @@ def run_neural_network_tune_and_train():
             else:
                 wrong += 1
         '''
-            
+          
+        muscle_error = {}
+        neurons_in_each_muscle = {}
+        
 
         for test_case in range(0, len(data_input[test_fold])):
             temp_output = n.forward_prop(data_input[test_fold][test_case])
+            temp_error = n.hidden_layers[-1].calculate_output_error(data_labels[test_fold][test_case])
+
+            # Adding error values for each muscle.
+            if muscle_id[test_fold][test_case] not in muscle_error.keys():
+                muscle_error[muscle_id[test_fold][test_case]] = temp_error
+                neurons_in_each_muscle[muscle_id[test_fold][test_case]] = 1
+            else:
+                muscle_error[muscle_id[test_fold][test_case]] += temp_error
+                neurons_in_each_muscle[muscle_id[test_fold][test_case]] += 1
 
             if temp_output[0] > temp_output[1] and temp_output[0] > temp_output[2]and temp_output[0] > temp_output[3]and temp_output[0] > temp_output[4]and temp_output[0] > temp_output[5]and temp_output[0] > temp_output[6]: # Healthy
                 final_output = 0
@@ -109,18 +125,19 @@ def run_neural_network_tune_and_train():
             else:
                 print("equal outputs!")
 
-            if (data_labels[test_fold][test_case][0] == 1 and final_output == 0) or \
-               (data_labels[test_fold][test_case][1] == 1 and final_output == 1) or \
-               (data_labels[test_fold][test_case][2] == 1 and final_output == 2) or \
-               (data_labels[test_fold][test_case][3] == 1 and final_output == 3) or \
-               (data_labels[test_fold][test_case][4] == 1 and final_output == 4) or \
-               (data_labels[test_fold][test_case][5] == 1 and final_output == 5) or \
-               (data_labels[test_fold][test_case][6] == 1 and final_output == 6):
+            if (data_labels[test_fold][test_case][0] == 1 and (final_output == 0 or final_output == 1 or final_output == 4)) or \
+               (data_labels[test_fold][test_case][1] == 1 and (final_output == 1 or final_output == 2 or final_output == 3)) or \
+               (data_labels[test_fold][test_case][2] == 1 and (final_output == 2 or final_output == 1 or final_output == 3)) or \
+               (data_labels[test_fold][test_case][3] == 1 and (final_output == 3 or final_output == 2 or final_output == 1)) or \
+               (data_labels[test_fold][test_case][4] == 1 and (final_output == 4 or final_output == 5 or final_output == 6)) or \
+               (data_labels[test_fold][test_case][5] == 1 and (final_output == 5 or final_output == 4 or final_output == 6)) or \
+               (data_labels[test_fold][test_case][6] == 1 and (final_output == 6 or final_output == 5 or final_output == 4)):
                 correct += 1
             else:
                 wrong += 1
 
-    
+
+
             '''
             # Output analysis for IRIS & Abalone classification.
             if temp_output[0] > temp_output[1] and temp_output[0] > temp_output[2]:
@@ -140,12 +157,27 @@ def run_neural_network_tune_and_train():
             
             
 
-            print("TestFold: " + str(test_fold) + " Desired: " + str(data_labels[test_fold][test_case]) + " Result: " + str(final_output))
+            print("TestFold: " + str(test_fold) + " MUSCLE ID: " + str(muscle_id[test_fold][test_case]) + " Desired: " + str(data_labels[test_fold][test_case]) + " Result: " + str(final_output))
+        
+        for muscle_key in muscle_error:
+            muscle_error[muscle_key] /= neurons_in_each_muscle[muscle_key]
+            print("MUSCLE ID: " + str(muscle_key) + " ERROR: " + str(muscle_error[muscle_key]) + " NUM NERUONS: " + str(neurons_in_each_muscle[muscle_key]))
+
+            if muscle_key not in errors_all_muscles:
+                errors_all_muscles[muscle_key] = []
+                errors_all_muscles[muscle_key].append(muscle_error[muscle_key])
+            else:
+                errors_all_muscles[muscle_key].append(muscle_error[muscle_key])
+
         print("Correct: " + str(correct) + " Wrong: " + str(wrong) + " Accuracy: " + str(correct/(correct+wrong)))
         average_model_error += correct / (correct + wrong)
 
     average_model_error /= 10
     print("Average Model Error: " + str(average_model_error))
+
+    print("OVERALL MUSCLE ERRORS ")
+    for i in errors_all_muscles:
+        print("MUSCLE: " + str(i) + " : " + str(errors_all_muscles[i]))
 
 
 
@@ -299,9 +331,10 @@ def k_fold_cross_validation():
     data = read_training_data()
 
     # Each data fold will have 15 cases for IRIS and 80 cases for EMG equaling 10 folds.
-    fold_size = 38
+    fold_size = 80
     data_input = []
     data_label = []
+    muscle_id = []
  
     start = 0
     end = fold_size
@@ -309,15 +342,16 @@ def k_fold_cross_validation():
     while start < len(data[0]):
         data_input.append(data[0][start:end])
         data_label.append(data[1][start:end])
+        muscle_id.append(data[2][start:end])
 
         start += fold_size
         end += fold_size
 
     #for i in range(0, len(data_label)):
     #    for j in range(0, len(data_label[i])):
-    #        print(str(data_input[i][j]) + ":" + str(data_label[i][j]))
+    #        print(str(data_input[i][j]) + " : " + str(data_label[i][j]) + " MUSCLE ID: " + str(muscle_id[i][j]))
 
-    return data_input, data_label
+    return data_input, data_label, muscle_id
 
 
 # Reading in data from CSV file and storing it into a 2D array.

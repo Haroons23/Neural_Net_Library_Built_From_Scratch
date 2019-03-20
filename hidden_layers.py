@@ -10,9 +10,8 @@ class HiddenLayer:
         self.layer_error = np.zeros(num_nodes)
         self.outputs = None 
 
-        # Deltas.
-        self.weight_delta = np.zeros((num_nodes, num_inputs))
-        self.bias_delta = np.zeros(num_nodes)
+        # Used for batch learning.
+        self.batch_error = np.zeros(num_nodes)
 
     # Does the summation and puts it through the activation function.
     def calculate_output(self):
@@ -37,7 +36,6 @@ class HiddenLayer:
     # Ei ← sigmoidError(Ci ) × [Di − Ci]
     # Pattern_Errori += (Di − Ci ) ** 2
     def calculate_output_error(self, desired):
-        #print("\n\n")
 
         self.layer_error = self.sigmoid(self.outputs, derivative = True) * (desired - self.outputs)
         
@@ -104,13 +102,9 @@ class HiddenLayer:
         # Bias += αEi
         self.bias = self.bias + (self.layer_error * learning_rate)
 
+    
     def batch_learning(self):
-
-        self.weights = self.weights + self.weight_delta
-        self.bias = self.bias + self.bias_delta
-
-        print("WEIGHTS: " + str(self.weights))
-        print("BIAS" + str(self.bias))
+        pass
 
     # Adding input to the layer before computation.
     def initialize_input(self, inputs):

@@ -79,7 +79,7 @@ class NeuralNetwork:
             indexes.append(i)
 
         # Train until you run out of data or error is below limit.
-        while epoch < 3001 and cumulative_error > self.max_error:
+        while epoch < 2001 and cumulative_error > self.max_error:
             
             cumulative_error = 0
             random.shuffle(indexes)
@@ -105,10 +105,11 @@ class NeuralNetwork:
 
             # If the validation error increases this means that the model has overfitted the data.
             # To resolve this we go back to the state prior to overfitting.
-            if epoch % 100 == 0:
+            if epoch % 200 == 0:
                 #validation_error = self.validation(validation_data[0], validation_data[1])
                 #if validation_error > previous_validation_error:
                 #    self.hidden_layers = nn_prior_to_overfitting
+                #return
                 print(str(epoch) + ". ->Error Epoch: " + str(cumulative_error))# + " Validation: " + str(validation_error))
 
             epoch += 1
@@ -132,6 +133,8 @@ class NeuralNetwork:
         #print("validation error: " + str(cumulative_error))
 
         return cumulative_error
+
+
 
     # Description: Propagates output from first layer to the last to calculate output.
     # data: data passed into the first layer of network as input.
