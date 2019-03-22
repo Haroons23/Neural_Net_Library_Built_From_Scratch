@@ -6,9 +6,8 @@ import sys
 
 class NeuralNetwork:
 
-    # Training stops when total error is less than max.
-    max_error = 0.000001
-    ONLINE_LEARNING = True
+    # Training stops when cumulative error is less than max.
+    max_error = 0.01
 
     def __init__(self, num_inputs, num_hidden_layers, num_outputs):
         self.num_inputs  = num_inputs
@@ -61,29 +60,33 @@ class NeuralNetwork:
 
     # Description: Runs the training simulation to modify the weights to their correct values.
     # data & desired: data to train with and the desired output of of each training case.
-    # learning_rate & momentum: the amount to which weights can change by. 
-    def train(self, data, desired, learning_rate, momentum, validation_data):
+    # learning_rate & momentum: the amount to which weights get adjusted by.
+    # max_epoch: number of iterations through the training data set.
+    # overfitting_data: array where index 0 is input data and index 1 is desired output. Used for overfitting check. 
+    def train(self, data, desired, learning_rate, momentum, max_epoch, overfitting_data):
         
-        cumulative_error = 1000
+        # Error values are set to large values to begin with. 
         epoch = 0
-        previous_epoch_error = 1000
         previous_epoch = 0
+        cumulative_error = 999999
+        previous_epoch_error = 999999
 
         # Used to prevent overfitting.
-        previous_validation_error = 0
+        previous_overfitting_error = 999999
         nn_prior_to_overfitting = self.hidden_layers
 
-        # Used to randomize traversal order in each epoch.
+        # Randomize traversal order in each epoch.
         indexes = []
         for i in range(0, len(data)):
             indexes.append(i)
 
-        # Train until you run out of data or error is below limit.
-        while epoch < 2001 and cumulative_error > self.max_error:
+        # Train until you reach max num of epochs or error is below desired limit.
+        while epoch < max_epoch and cumulative_error > self.max_error:
             
             cumulative_error = 0
             random.shuffle(indexes)
 
+            # Forward & backward propagation.
             for i in indexes:
                 self.forward_prop(data[i])
                 cumulative_error += self.backward_prop(learning_rate, momentum, desired[i])
@@ -91,32 +94,65 @@ class NeuralNetwork:
             # Scale error by number of samples.
             cumulative_error /= len(data)
 
-            # Early exit if slope is negative for every 5 epochs.
+            # Checking for correct trends every 5 epochs & updating learing rate.
             if epoch % 5 == 0:
                 try:
+                    # If the slope of the epoch error is positive that means the error is increasing. Training is stopped.
                     if float(cumulative_error - previous_epoch_error) / (epoch - previous_epoch) > 0.01:
-                        #print(str(cumulative_error) + " - " + str(previous_epoch_error) +" / "+ str(epoch) +" - "+ str(previous_epoch))
+                        print("Model Error is Rising at Epoch: " + str(epoch) + " Training is Stopped")
+                        print(str(cumulative_error) + " - " + str(previous_epoch_error) +" / "+ str(epoch) +" - "+ str(previous_epoch))
                         return
+
+                    # If validation accuracy decreases that means the program is overfitting the training data.
+                    # Weights & biases are set to previous values and training is stopped.
+                    # NOTE: Don't use the validation dataset to check for overfitting. Overfitting is only checked
+                    # if dataset is large enough that the overfitting check has its own dataset.
+                    overfitting_error = self.validation(overfitting_data[0], overfitting_data[1])
+                   
+                    if overfitting_error - previous_overfitting_error > 0.01 or (overfitting_error - cumulative_error > 0.05):
+                        print("PRE OVERFITTING:")
+                        self.to_string()
+                        print("Model Overfitted the Training Set at Epoch: " + str(epoch) + " Training is Stopped")
+                        print(str(overfitting_error) + " > " + str(previous_overfitting_error) + " Epoch: " + str(epoch))
+                        self.hidden_layers = nn_prior_to_overfitting
+                        print("POST OVERFITTING:")
+                        self.to_string()
+                        return
+
+                    previous_overfitting_error = overfitting_error
+
+                    # Updating learning rate based off the rate of change in epoch error.
+                    if epoch > 0:
+                        percent_change = (cumulative_error - previous_epoch_error) / (epoch - previous_epoch)
+                        
+                        # Learning rate should never increase. 
+                        if percent_change < 0:
+                            new_learning_rate = learning_rate - abs(learning_rate * percent_change)
+    
+                            if new_learning_rate > 0.01:
+                                learning_rate = 0.01
+                            elif new_learning_rate < 0.005:
+                                learning_rate = 0.005
+                            else:
+                                learning_rate = new_learning_rate
+                        
                 except ZeroDivisionError:
                     pass
 
+                # Updating values used for checks.
                 previous_epoch_error = cumulative_error
                 previous_epoch = epoch
+                nn_prior_to_overfitting = self.hidden_layers
 
-            # If the validation error increases this means that the model has overfitted the data.
-            # To resolve this we go back to the state prior to overfitting.
-            if epoch % 200 == 0:
-                #validation_error = self.validation(validation_data[0], validation_data[1])
-                #if validation_error > previous_validation_error:
-                #    self.hidden_layers = nn_prior_to_overfitting
-                #return
-                print(str(epoch) + ". ->Error Epoch: " + str(cumulative_error))# + " Validation: " + str(validation_error))
+            # Prints Epoch error. 
+            if epoch % 20 == 0:
+                print(str(epoch) + ". ->Error Epoch: " + str(cumulative_error) + "Validation: " + str(self.validation(overfitting_data[0], overfitting_data[1])))
 
             epoch += 1
 
-    # Used to see if model is overfitting and to see if hyperparameters need to be adjusted.
-    # If Training error is low but validation error is higher, then model has overfitted data.
-    # If Validation error is low then model has not overfitted.
+    # Description: Forward propagates and calculates output error without backpropagating the error.
+    # It is used to check the accuracy of the model.
+    # data & desired: Input data and desired output.
     def validation(self, data, desired):
         
         # Total Output error for the Epoch.

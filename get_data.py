@@ -56,7 +56,7 @@ def run_neural_network_tune_and_train():
         
         # Creating and training the model on the training data.
         n = NeuralNetwork(7, hidden_layer_structure[config], 7)
-        n.train(combined_folds_input, combined_folds_label, learning_rate, 0, [data_input[validation_fold], data_labels[validation_fold]])
+        n.train(combined_folds_input, combined_folds_label, learning_rate, 0, 10000, [data_input[validation_fold], data_labels[validation_fold]])
         
         # Validating model on validation set and then adjusting the hyperparameters.
         validation_error = n.validation(data_input[validation_fold], data_labels[validation_fold])
