@@ -56,7 +56,7 @@ def run_neural_network_tune_and_train():
         
         # Creating and training the model on the training data.
         n = NeuralNetwork(7, hidden_layer_structure[config], 7)
-        n.train(combined_folds_input, combined_folds_label, learning_rate, 0, 10000, [data_input[validation_fold], data_labels[validation_fold]])
+        n.train(combined_folds_input, combined_folds_label, learning_rate, 0, 1000, [data_input[validation_fold], data_labels[validation_fold]])
         
         # Validating model on validation set and then adjusting the hyperparameters.
         validation_error = n.validation(data_input[validation_fold], data_labels[validation_fold])
@@ -108,6 +108,8 @@ def run_neural_network_tune_and_train():
                 muscle_error[muscle_id[test_fold][test_case]] += temp_error
                 neurons_in_each_muscle[muscle_id[test_fold][test_case]] += 1
 
+            
+            # Getting prediction class.  
             if temp_output[0] > temp_output[1] and temp_output[0] > temp_output[2]and temp_output[0] > temp_output[3]and temp_output[0] > temp_output[4]and temp_output[0] > temp_output[5]and temp_output[0] > temp_output[6]: # Healthy
                 final_output = 0
             elif temp_output[1] > temp_output[0] and temp_output[1] > temp_output[2]and temp_output[1] > temp_output[3]and temp_output[1] > temp_output[4]and temp_output[1] > temp_output[5]and temp_output[1] > temp_output[6]:
@@ -125,13 +127,14 @@ def run_neural_network_tune_and_train():
             else:
                 print("equal outputs!")
 
-            if (data_labels[test_fold][test_case][0] == 1 and (final_output == 0 or final_output == 1 or final_output == 4)) or \
-               (data_labels[test_fold][test_case][1] == 1 and (final_output == 1 or final_output == 2 or final_output == 3)) or \
-               (data_labels[test_fold][test_case][2] == 1 and (final_output == 2 or final_output == 1 or final_output == 3)) or \
-               (data_labels[test_fold][test_case][3] == 1 and (final_output == 3 or final_output == 2 or final_output == 1)) or \
-               (data_labels[test_fold][test_case][4] == 1 and (final_output == 4 or final_output == 5 or final_output == 6)) or \
-               (data_labels[test_fold][test_case][5] == 1 and (final_output == 5 or final_output == 4 or final_output == 6)) or \
-               (data_labels[test_fold][test_case][6] == 1 and (final_output == 6 or final_output == 5 or final_output == 4)):
+
+            if (data_labels[test_fold][test_case][0] == 1 and (final_output == 0)) or \
+               (data_labels[test_fold][test_case][1] == 1 and (final_output in [1,2,3,4,5,6])) or \
+               (data_labels[test_fold][test_case][2] == 1 and (final_output in [1,2,3,4,5,6])) or \
+               (data_labels[test_fold][test_case][3] == 1 and (final_output in [1,2,3,4,5,6])) or \
+               (data_labels[test_fold][test_case][4] == 1 and (final_output in [1,2,3,4,5,6])) or \
+               (data_labels[test_fold][test_case][5] == 1 and (final_output in [1,2,3,4,5,6])) or \
+               (data_labels[test_fold][test_case][6] == 1 and (final_output in [1,2,3,4,5,6])):
                 correct += 1
             else:
                 wrong += 1
@@ -482,6 +485,11 @@ def preprocess_data_0_1(data):
     data = np.array(data)
     mins = data.min(axis = 0)
     maxs = data.max(axis = 0)
+
+    print("Mins: " + str(mins) + "\n")
+    print("Max: " + str(maxs))
+    exit()
+
 
     # Transforming data based off min and max.
     for variable in range(0, 7):
